@@ -1,0 +1,142 @@
+/*
+ * Copyright 2010 Dave Finster
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+Purpose:
+I've developed a few iPhone applications with APIs to operate along-side them. 
+As a result, I found myself duplicating large amounts of my code to do with 
+network operations across projects. ALl the APIs that I develop are REST 
+oriented so that is how I have positioned this library. While some of this 
+code is very simple and may not require a library, it addresses three 
+challenges that I have faced in my projects.
+
+1. Multi-Part Uploads
+	In some of my projects, I've had the need to upload not just text, but 
+also images and files. There aren't any in-built methods of doing this on 
+the iOS SDK so I wrote my own based on the feedback and suggestions of 
+various forums. The RKRequestMultipartBody makes this process simple. 
+
+2. Direct-To-Disk Downloading
+	One of my projects involved downloading fairly large files, making it 
+impractical to store data in memory during download. As a result, I've 
+added this functionality to both RKRequest (the basic REST request) and 
+the RKRestFileRequest class which handles the creation and configuration 
+of the requests.
+	
+3. Progress
+	Throughout any of the projects which needed intense network activity, 
+we developers need to keep our users up to date. I decided to add 
+notification generation to the RKRestRequest classes allowing multiple 
+objects to observe progress updates in both upstream and downstream 
+directions.
+
+4. Central Tracking of Activity
+	Using the RKRequestManager class, every single active network operation,
+its progress and its controlling object can be easily accessed and tracked. 
+This is useful for adding a status page which details exactly what your app 
+is doing and potentially allow the user to cancel certain operations.
+
+5. Easy, but manageable Image Download
+	Using the RKImageLoader class, you get access to a simple way of 
+downloading a large set of images in a controlled manager that won't have 
+20 or so separate NSURLConnection objects executing at once. Simply get 
+the URL of the image that you want to download and have your object 
+implement the RKImageLoaderDelegate protocol and the rest is taken care of 
+for you. Since this makes use of the same RKRequest class, all image 
+downloads are also trackable within the RKRequestManager. 
+
+Examples:
+Say there is a public API somewhere called example.com that complies with REST 
+and allows you to interact with an events entity. Restkit makes this a little 
+easier to do.
+
+For a GET (eg. get a list of events):
+RKRestRequest *rest = [[RKRestRequest alloc] 
+						initWithURL:[NSURL URLWithString:@"http://api.example.com/events"] 
+						requestBody:nil];
+rest.delegate = self;
+rest.requestMethod = RKRestRequestGet;
+[rest go];
+
+Assuming self conforms to RKRestRequestDelegate, self will receive a callback in 
+-(void)requestDidComplete:(RKRequest *)request;
+during which self can call rest.receivedData to access what was downloaded.
+
+For a GET which returns an image
+RKRestFileRequest *rest = [[RKRestFileRequest alloc]
+							initWithURL:[NSURL URLWithString:@"http://api.example.com/events/1/image"] 
+							requestBody:nil 
+							filePath:pathToImage];
+rest.delegate = self;
+rest.requestMethod = RKRestRequestGet;
+[rest go];
+
+Once the request completes, the delegate will still receive a 
+-(void)requestDidComplete:(RKRequest *)request;
+callback. The difference here is that instead of request.receivedData containing 
+whatever was downloaded, it will be nil. Instead, whichever file the request was 
+instructed to download will now be available at the specified file path which can 
+be accessed through request.filePath.
+
+For a simple POST (eg. create an event):
+RKRequestBody *body = [[RKRequestBody alloc] init];
+[body addField:"eventName" text:@"My Awesome Event"];
+[body addField:"eventDescription" text:@"..."];
+RKRestRequest *rest = [[RKRestRequest alloc] 
+						initWithURL:[NSURL URLWithString:@"http://api.example.com/events"] 
+						requestBody:body];
+rest.delegate = self;
+rest.requestMethod = RKRestRequestPost;
+[rest go];
+
+As before, once the request is complete, self will receive a callback.
+
+For a complex POST (eg. create an event with an attached image and invitation PDF):
+RKRequestMultipartBody *body = [[RKRequestMultipartBody alloc] init];
+[body addField:"eventName" text:@"My Awesome Event"];
+[body addField:"eventDescription" text:@"..."];
+[body addField:"eventImage" image:imageObject fileName:@"awesome_event.jpg"];
+[body addField:"eventImage" filePath:pathToPDFFile fileName:@"awesome_event_invitation.pdf"];
+[body finalizeBody];
+RKRestRequest *rest = [[RKRestRequest alloc] 
+						initWithURL:[NSURL URLWithString:@"http://api.example.com/events"] 
+						requestBody:body];
+rest.delegate = self;
+rest.requestMethod = RKRestRequestPost;
+[rest go];
+
+As before, once the request is complete, self will receive a callback.
+
+Now, if we are doing a very intense upload operation as above, there are two facilities that we 
+can use to keep up to date with the live progress of the request.
+
+1. Implement delegate methods
+	In the RKRestRequestDelegate protocol there are two methods:
+	-(void)uploadProgressDidUpdate:(RKRequest *)request progress:(double)progress;
+	-(void)downloadProgressDidUpdate:(RKRequest *)request progress:(double)progress;
+	These methods are optional, however if they are implemented, then the delegate will receive 
+	updates regarding the upload and download of the original request/response respectively. The 
+	range of values are from 0.0 to 1.0. 
+
+2. Turn Notifications On
+	In the above example, by adding:
+	rest.generateNotifications = YES
+	the request will not only check to see if the delegate methods are implemented (both can be used),
+	it will also generate NSNotifications of types:
+	RKRestRequestUploadProgressUpdateNotification
+	RKRestRequestDownloadProgressUpdateNotification
+	through the NSNotificationCenter so that any object in your code which has been registered as an 
+	observer can receive the same updates as the delegate object. 
+
