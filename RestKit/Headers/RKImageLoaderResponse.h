@@ -15,8 +15,7 @@
  */
 
 #import <Foundation/Foundation.h>
-
-
+#import <UIKit/UIKit.h>
 @interface RKImageLoaderResponse : NSObject {
 	NSString *_filePath;
 	NSURL *_url;

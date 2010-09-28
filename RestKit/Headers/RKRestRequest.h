@@ -20,13 +20,17 @@
 
 @protocol RKRestRequestDelegate;
 
-extern NSString * const RKRestRequestGet;
-extern NSString * const RKRestRequestPost;
-extern NSString * const RKRestRequestPut;
-extern NSString * const RKRestRequestDelete;
+typedef enum {
+    RKRestRequestGet,
+    RKRestRequestPost,
+    RKRestRequestPut,
+	RKRestRequestDelete
+} RKRestRequestMethod;
+
 extern NSString * const RKRestRequestUploadProgressUpdateNotification;
 extern NSString * const RKRestRequestDownloadProgressUpdateNotification;
 extern NSString * const RKRestRequestDidCompleteNotification;
+extern NSString * const RKRestRequestBackgroundTimeoutError;
 
 /**
  * A RKRestRequest provides enhanced functionality above the RKRequest 
@@ -42,10 +46,12 @@ extern NSString * const RKRestRequestDidCompleteNotification;
 	RKRequestBody *_body;
 	NSMutableURLRequest *_urlRequest;
 	NSURL *_url;
-	NSString *_requestMethod;
+	RKRestRequestMethod _requestMethod;
 	double _uploadProgress;
 	double _downloadProgress;
 	BOOL _generateNotifications;
+	BOOL _attemptBackgroundOperation;
+	NSUInteger _backgroundTaskIdentifier;
 }
 
 /**
@@ -62,7 +68,7 @@ extern NSString * const RKRestRequestDidCompleteNotification;
  * RKRestRequestPut
  * Default method is RKRestRequestGet
  */
-@property(nonatomic, retain) NSString *requestMethod;
+@property(nonatomic) RKRestRequestMethod requestMethod;
 
 /**
  * Specifies whether this request should generate NSNotification objects 
@@ -85,6 +91,19 @@ extern NSString * const RKRestRequestDidCompleteNotification;
  * when a file is not being downloaded directly to the file system
  */
 @property (nonatomic, readonly) NSData *receivedData;
+
+/**
+ * By default set to NO - When set to YES, the REST request will attempt 
+ * to register itself as a background task before executing. This allows 
+ * the user to leave the app while the request is still running. If the 
+ * request runs out of time before being terminated by the OS, a final 
+ * requestDidFail message will be sent to the delegate. If you are running 
+ * background operations, ensure that this method is very lightweight, 
+ * otherwise there is the risk of the app being terminated. A timeout 
+ * error is indicated by the passing of RKRestRequestBackgroundTimeoutError 
+ * as the error argument to requestDidFail.
+ */
+@property BOOL attemptBackgroundOperation;
 
 /**
  * Initializes the request with to a given URL and pre-configured (and 

@@ -17,17 +17,13 @@
 #import "RKRestRequest.h"
 #import "RKRequestMultipartBody.h"
 
-NSString * const RKRestRequestGet = @"GET";
-NSString * const RKRestRequestPost = @"POST";
-NSString * const RKRestRequestPut = @"PUT";
-NSString * const RKRestRequestDelete = @"DELETE";
 NSString * const RKRestRequestUploadProgressUpdateNotification = @"RKRestRequestUploadProgressUpdateNotification";
 NSString * const RKRestRequestDownloadProgressUpdateNotification = @"RKRestRequestDownloadProgressUpdateNotification";
 NSString * const RKRestRequestDidCompleteNotification = @"RKRestRequestDidCompleteNotification";
-
+NSString * const RKRestRequestBackgroundTimeoutError = @"RKRestRequestBackgroundTimeoutError";
 @implementation RKRestRequest
 
-@synthesize requestMethod=_requestMethod, delegate=_delegate, generateNotifications=_generateNotifications, uploadProgress = _uploadProgress, downloadProgress = _downloadProgress;
+@synthesize requestMethod=_requestMethod, delegate=_delegate, generateNotifications=_generateNotifications, uploadProgress = _uploadProgress, downloadProgress = _downloadProgress, attemptBackgroundOperation = _attemptBackgroundOperation;
 
 -(id) initWithURL:(NSURL *)url requestBody:(RKRequestBody *)body{
 	[self init];
@@ -39,7 +35,7 @@ NSString * const RKRestRequestDidCompleteNotification = @"RKRestRequestDidComple
 
 -(void) prepareUrlForRequestMethod{
 	if (_body != nil) {
-		if (([_requestMethod isEqualToString:RKRestRequestGet]) || ([_requestMethod isEqualToString:RKRestRequestDelete])) {
+		if ((_requestMethod == RKRestRequestGet) || (_requestMethod == RKRestRequestDelete)) {
 			NSURL *modifiedUrl = [[NSURL alloc] initWithString:[NSString stringWithFormat:@"%@?%@", [_url absoluteURL], _body.bodyString]];
 			[_url release];
 			_url = modifiedUrl;
@@ -47,19 +43,59 @@ NSString * const RKRestRequestDidCompleteNotification = @"RKRestRequestDidComple
 	}
 }
 
+-(void) configureBackgroundTask{
+	if (_attemptBackgroundOperation) {
+		BOOL backgroundSupported = NO;
+		if ([[UIDevice currentDevice] respondsToSelector:@selector(isMultitaskingSupported)]) {
+			backgroundSupported = [UIDevice currentDevice].multitaskingSupported;
+		}
+		if ((backgroundSupported) && (_attemptBackgroundOperation)) {
+			_backgroundTaskIdentifier = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
+				if ([_delegate respondsToSelector:@selector(requestDidFail:error:)]) {
+					[_delegate requestDidFail:self error:RKRestRequestBackgroundTimeoutError];
+				}
+			}];
+		}
+	}
+}
+
+-(void) endBackgroundTask{
+	BOOL backgroundSupported = NO;
+	if ([[UIDevice currentDevice] respondsToSelector:@selector(isMultitaskingSupported)]) {
+		backgroundSupported = [UIDevice currentDevice].multitaskingSupported;
+	}
+	if ((backgroundSupported) && (_attemptBackgroundOperation)) {
+		[[UIApplication sharedApplication] endBackgroundTask:_backgroundTaskIdentifier];
+		_backgroundTaskIdentifier = UIBackgroundTaskInvalid;
+	}
+}
+
+-(void) setURLRequestMethod:(NSMutableURLRequest *)request{
+	if (_requestMethod == RKRestRequestGet) {
+		[request setHTTPMethod:@"GET"];
+	}else if (_requestMethod == RKRestRequestPost) {
+		[request setHTTPMethod:@"POST"];
+	}else if (_requestMethod == RKRestRequestPut) {
+		[request setHTTPMethod:@"PUT"];
+	}else if (_requestMethod == RKRestRequestDelete) {
+		[request setHTTPMethod:@"DELETE"];
+	}
+}
+
 -(void) go{
-	if (_requestMethod == nil) {
-		[NSException raise:@"InvalidArgumentException" format:@"Request method can not be nil"];
+	if ((_requestMethod != RKRestRequestGet) && (_requestMethod != RKRestRequestPost) && (_requestMethod != RKRestRequestPut) && (_requestMethod != RKRestRequestDelete)) {
+		[NSException raise:@"InvalidArgumentException" format:@"Request method can not be invalid"];
 	}else {
+		[self performSelector:@selector(configureBackgroundTask)];
 		[self performSelector:@selector(prepareUrlForRequestMethod)];
 		_urlRequest = [[NSMutableURLRequest alloc] initWithURL:_url];
-		[_urlRequest setHTTPMethod:_requestMethod];
+		[self performSelector:@selector(setURLRequestMethod:) withObject:_urlRequest];
 		[_urlRequest setValue:@"application/xml" forHTTPHeaderField:@"Accept"];
 		if ([_body isMemberOfClass:[RKRequestMultipartBody class]]) {
 			[_urlRequest addValue:[(RKRequestMultipartBody *)_body boundary] forHTTPHeaderField:@"Content-Type"];
 		}
 		if (_body != nil) {
-			if (([_requestMethod isEqualToString:RKRestRequestPost]) || ([_requestMethod isEqualToString:RKRestRequestPut])) {
+			if ((_requestMethod == RKRestRequestPost) || (_requestMethod == RKRestRequestPut)) {
 				[_urlRequest setHTTPBody:_body.bodyData];
 			}
 		}
@@ -74,6 +110,7 @@ NSString * const RKRestRequestDidCompleteNotification = @"RKRestRequestDidComple
 }
 
 -(void)dealloc{
+	[self performSelector:@selector(endBackgroundTask)];
 	[_urlRequest release];
 	_urlRequest = nil;
 	[_url release];

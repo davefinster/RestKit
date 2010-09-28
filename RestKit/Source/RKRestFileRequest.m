@@ -27,10 +27,11 @@
 }
 
 -(void) go{
+	[self performSelector:@selector(configureBackgroundTask)];
 	[self performSelector:@selector(prepareUrlForRequestMethod)];
 	_urlRequest = [[NSMutableURLRequest alloc] initWithURL:_url];
-	[_urlRequest setHTTPMethod:_requestMethod];
-	if (([_requestMethod isEqualToString:RKRestRequestPost]) || ([_requestMethod isEqualToString:RKRestRequestPut])) {
+	[self performSelector:@selector(setURLRequestMethod:) withObject:_urlRequest];
+	if ((_requestMethod == RKRestRequestPost) || (_requestMethod == RKRestRequestPut)) {
 		[_urlRequest setHTTPBody:_body.bodyData];
 	}
 	_request = [[RKRequest alloc] initWithRequest:_urlRequest filePath:_filePath];

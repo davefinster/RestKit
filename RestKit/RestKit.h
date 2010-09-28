@@ -23,5 +23,5 @@
 #import "RKImageLoader.h"
 #import "RKImageLoaderRequest.h"
 #import "RKImageLoaderResponse.h"
-
+#import "RKRemoteImageView.h"
 #define RKBaseURL @"http://www.example.com/api/"
