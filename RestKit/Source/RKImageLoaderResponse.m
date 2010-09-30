@@ -19,12 +19,13 @@
 
 @implementation RKImageLoaderResponse
 
-@synthesize filePath = _filePath, url = _url, error = _error;
+@synthesize filePath = _filePath, url = _url, error = _error, fromCache = _fromCache;
 
--(id)initWithImage:(NSString *)imageString source:(NSURL *)source{
+-(id)initWithImage:(NSString *)imageString source:(NSURL *)source fromCache:(BOOL)fromCache{
 	[self init];
 	_filePath = [imageString retain];
 	_url = [source retain];
+	_fromCache = fromCache;
 	return self;
 }
 

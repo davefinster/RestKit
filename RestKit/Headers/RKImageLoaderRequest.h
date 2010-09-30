@@ -23,9 +23,11 @@
 @interface RKImageLoaderRequest : NSObject {
 	NSString *_url;
 	NSMutableArray *_delegate;
+	BOOL _bypassCache;
 }
 
 @property (nonatomic, retain) NSString *url;
+@property BOOL bypassCache;
 
 -(void)addDelegate:(id<RKImageLoaderDelegate>)delegate;
 -(void)performResponse:(RKImageLoaderResponse *)response;

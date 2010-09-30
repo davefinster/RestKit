@@ -55,7 +55,16 @@ downloading a large set of images in a controlled manager that won't have
 the URL of the image that you want to download and have your object 
 implement the RKImageLoaderDelegate protocol and the rest is taken care of 
 for you. Since this makes use of the same RKRequest class, all image 
-downloads are also trackable within the RKRequestManager. 
+downloads are also trackable within the RKRequestManager. Images that are 
+downloaded are also cached for future use.
+
+6. Simple embedding of remote images
+	Using the RKRemoteImageView class, a subclass of UIImageView, its easy 
+to embed images located on remote servers cleanly in your app. The view is 
+initiated with an URL (optionally) and a frame. When supplied with a URL, 
+a centrally positioned UIActivityIndicatorView is automatically added and 
+animated for the duration of the download. Once the download is complete, 
+the image is automatically inserted and the activity indicator is hidden.
 
 Examples:
 Say there is a public API somewhere called example.com that complies with REST 

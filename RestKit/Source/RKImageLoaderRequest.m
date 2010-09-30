@@ -19,7 +19,7 @@
 
 @implementation RKImageLoaderRequest
 
-@synthesize url = _url;
+@synthesize url = _url, bypassCache = _bypassCache;
 
 -(id)init{
 	self = [super init];

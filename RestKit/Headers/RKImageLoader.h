@@ -25,10 +25,25 @@ extern NSString * const RKImageLoaderDownloadCompleteNotification;
 /**
  * The RKImageLoader provides a queueable method of downloading 
  * images asynchronously from the internet. 
+ *
+ * Cache:
+ * RKImageLoader manages an image cache within the documents 
+ * directory of the application. The cache folder is called 
+ * RestKitImageCache, but can be altered by changing the return 
+ * value of cacheDirectory. Inside this directory, a plist
+ * containing a serialized NSMutableDictionary exists which 
+ * provides mappings between previously accessed URL's and 
+ * the resulting file paths. The caching strategy is to 
+ * simply save all downloaded images and assumes that if the 
+ * same URL is requested, the same image should be returned (ie 
+ * it makes the assumption that the image at a given URL does not change).
+ * The cache can be manually cleared by calling the clearCache 
+ * method.
  */
 @interface RKImageLoader : NSObject<RKRequestDelegate>{
 	NSMutableArray *_queue;
 	RKRequest *_currentRequest;
+	NSMutableDictionary *_cacheDatabase;
 }
 
 /**
@@ -36,30 +51,36 @@ extern NSString * const RKImageLoaderDownloadCompleteNotification;
  */
 +(RKImageLoader *)defaultLoader;
 
++(NSString *)cacheDirectory;
++(NSString *)cacheDatabasePath;
+
 /**
  * Queues the specified url string for download. The delegate object will 
  * be notified once the download has been attempted.
  */
 +(void)loadImageFromUrlString:(NSString *)url delegate:(id<RKImageLoaderDelegate>)delegate;
++(void)loadImageFromUrlString:(NSString *)url bypassCache:(BOOL)bypassCache delegate:(id<RKImageLoaderDelegate>)delegate;
 
 /**
  * Queues the specified url for download. The delegate object will 
  * be notified once the download has been attempted.
  */
 +(void)loadImageFromUrl:(NSURL *)url delegate:(id<RKImageLoaderDelegate>)delegate;
++(void)loadImageFromUrl:(NSURL *)url bypassCache:(BOOL)bypassCache delegate:(id<RKImageLoaderDelegate>)delegate;
 
 /**
  * Queues the specified url string for download. The delegate object will 
  * be notified once the download has been attempted.
  */
 -(void)loadImageFromUrlString:(NSString *)url delegate:(id<RKImageLoaderDelegate>)delegate;
+-(void)loadImageFromUrlString:(NSString *)url bypassCache:(BOOL)bypassCache delegate:(id<RKImageLoaderDelegate>)delegate;
 
 /**
  * Queues the specified url for download. The delegate object will 
  * be notified once the download has been attempted.
  */
 -(void)loadImageFromUrl:(NSURL *)url delegate:(id<RKImageLoaderDelegate>)delegate;
-
+-(void)loadImageFromUrl:(NSURL *)url bypassCache:(BOOL)bypassCache delegate:(id<RKImageLoaderDelegate>)delegate;
 @end
 
 @protocol RKImageLoaderDelegate <NSObject>

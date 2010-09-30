@@ -32,10 +32,20 @@
 @interface RKRemoteImageView : UIImageView<RKImageLoaderDelegate>{
 	UIActivityIndicatorView *_activity;
 	UIActivityIndicatorViewStyle _indicatorStyle;
+	NSURL *_imageURL;
+	BOOL _bypassCache;
 }
 
+/**
+ * By default, RKRemoteImageView makes use of the RKImageLoader
+ * image caching system. Refer to RKImageLoader.h for the caching 
+ * strategy to decide whether you should disable it or not.
+ */
+@property BOOL bypassCache;
+
 @property (nonatomic) UIActivityIndicatorViewStyle indicatorStyle;
+@property (nonatomic, retain) NSURL *imageURL;
 
 -(id)initWithFrame:(CGRect)frame contentsOfURL:(NSURL *)url;
-
+-(id)initWithFrame:(CGRect)frame contentsOfURL:(NSURL *)url bypassCache:(BOOL)bypassCache;
 @end

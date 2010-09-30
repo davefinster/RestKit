@@ -19,11 +19,22 @@
 @implementation RKRemoteImageView
 
 @synthesize indicatorStyle = _indicatorStyle;
+@synthesize imageURL = _imageURL;
+@synthesize bypassCache = _bypassCache;
 
 -(id)initWithFrame:(CGRect)frame contentsOfURL:(NSURL *)url{
 	self = [super initWithFrame:frame];
 	_indicatorStyle = UIActivityIndicatorViewStyleGray;
-	[RKImageLoader loadImageFromUrl:url delegate:self];
+	if(url != nil){
+		_imageURL = [url retain];
+		[RKImageLoader loadImageFromUrl:url delegate:self];
+	}
+	return self;
+}
+
+-(id)initWithFrame:(CGRect)frame contentsOfURL:(NSURL *)url bypassCache:(BOOL)bypassCache{
+	self = [self initWithFrame:frame contentsOfURL:url];
+	self.bypassCache = bypassCache;
 	return self;
 }
 
@@ -35,7 +46,7 @@
 		_activity.hidesWhenStopped = YES;
 		[self addSubview:_activity];
 	}
-	if (self.image == nil) {
+	if ((self.image == nil) && (self._imageURL != nil)){
 		[_activity startAnimating];
 	}
 }
@@ -45,7 +56,16 @@
 	self.image = response.image;
 }
 
+-(void)setImageURL:(NSURL *)url{
+	[_imageURL release];
+	_imageURL = [url retain];
+	[RKImageLoader loadImageFromUrl:_imageURL delegate:self];
+	[_activity startAnimating];
+}
+
 -(void)dealloc{
+	[_imageURL release];
+	_imageURL = nil;
 	[_activity release];
 	_activity = nil;
 	[super dealloc];

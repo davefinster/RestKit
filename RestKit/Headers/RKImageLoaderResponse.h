@@ -16,10 +16,12 @@
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+
 @interface RKImageLoaderResponse : NSObject {
 	NSString *_filePath;
 	NSURL *_url;
 	NSString *_error;
+	BOOL _fromCache;
 }
 
 @property (readonly) UIImage *image;
@@ -27,9 +29,10 @@
 @property (readonly) NSString *urlString;
 @property (readonly) NSURL *url;
 @property (readonly) BOOL hasError;
+@property (readonly) BOOL fromCache;
 @property (readonly) NSString *error;
 
--(id)initWithImage:(NSString *)imageString source:(NSURL *)source;
+-(id)initWithImage:(NSString *)imageString source:(NSURL *)source fromCache:(BOOL)fromCache;
 -(id)initWithError:(NSString *)errorString source:(NSURL *)source;
 
 @end

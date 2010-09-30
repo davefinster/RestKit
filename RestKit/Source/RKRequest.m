@@ -72,6 +72,7 @@ NSString * const RKRequestFileError = @"RKRequestFileError";
 		if ([[response suggestedFilename] rangeOfString:@"unknown"].location != NSNotFound) {
 			NSString *fileExtension = (NSString *)UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (CFStringRef)[response MIMEType], NULL);
 			_tempFileName = [NSString stringWithFormat:@"%@%@%@", [[NSDate date] timeIntervalSince1970], arc4random() % 100000, fileExtension];
+			[fileExtension release];
 		}else {
 			_tempFileName = [[response suggestedFilename] retain];
 		}
