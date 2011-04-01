@@ -121,6 +121,7 @@
 }
 
 -(void)initiateNextRequest{	
+    NSLog(@"Hello");
 	if (([_queue count] > 0) && (_currentRequest == nil)) {
 		NSString *url = [(RKImageLoaderRequest *)[_queue objectAtIndex:0] url];
 		if (([[_cacheDatabase allKeys] containsObject:url]) && (![[_queue objectAtIndex:0] bypassCache])) {
